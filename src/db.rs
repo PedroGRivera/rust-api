@@ -34,7 +34,7 @@ impl SqliteConnPool {
         }
     }
 
-    
+
     //create tables inline
     fn create_table (&self, sql_table:&str) -> Result<bool, String> {
         let tmp_conn = &self.get_conn();
@@ -57,7 +57,7 @@ impl SqliteConnPool {
     }
 }
 
-
+#[allow(dead_code)] //TODO: Figure out if the sql_file_name is needed or can we get away without it?
 pub struct KvDb {
     pub sql_file_name: String,
     conn_pool: SqliteConnPool,
