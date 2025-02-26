@@ -11,3 +11,11 @@ rusqlite = { version = "0.33.0", features = ["bundled"] }
 serde = { version = "1.0.218", features = ["derive"] }
 serde_derive = "1.0.218"
 tokio = { version = "1.43.0", features = ["full"] }
+
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+debug = false
+panic = "abort"

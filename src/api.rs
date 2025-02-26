@@ -26,14 +26,22 @@ pub struct MinResponse {
 pub async fn create_kv(State(state): State<Arc<Mutex<KvDb>>>, Json(payload): Json<KeyVal>) -> (StatusCode, Json<MinResponse>) {
     let key = &payload.key.clone();
     let val = &payload.value.clone();
-    let create_res = state.lock().unwrap().create(key, val);
-    match create_res {
-        Ok(res) => {
-            if res {
-                (StatusCode::CREATED, Json(MinResponse{result:true}))
-            }
-            else {
-                (StatusCode::BAD_REQUEST, Json(MinResponse{result:false})) //TODO: find a better status code
+    let lock_res = state.lock();
+    match lock_res {
+        Ok(mut lock) => {
+            let create_res = lock.create(key, val);
+            match create_res {
+                Ok(res) => {
+                    if res {
+                        (StatusCode::CREATED, Json(MinResponse{result:true}))
+                    }
+                    else {
+                        (StatusCode::BAD_REQUEST, Json(MinResponse{result:false})) //TODO: find a better status code
+                    }
+                }
+                Err(_) => {
+                    (StatusCode::BAD_REQUEST, Json(MinResponse{result:false})) //TODO: find a better status code
+                }
             }
         }
         Err(_) => {
@@ -44,10 +52,18 @@ pub async fn create_kv(State(state): State<Arc<Mutex<KvDb>>>, Json(payload): Jso
 //read
 pub async fn read_kv(State(state): State<Arc<Mutex<KvDb>>>, Json(payload): Json<SearchKey>) -> (StatusCode, Json<KeyVal>){
     let key = &payload.key.clone();
-    let read_res = state.lock().unwrap().read(key);
-    match read_res {
-        Ok((res_key, res_val)) => {
-            (StatusCode::OK, Json(KeyVal{key:res_key, value: res_val}))
+    let lock_res = state.lock();
+    match lock_res {
+        Ok(mut lock) => {
+            let read_res = lock.read(key);
+            match read_res {
+                Ok((res_key, res_val)) => {
+                    (StatusCode::OK, Json(KeyVal{key:res_key, value: res_val}))
+                }
+                Err(_) => {
+                    (StatusCode::BAD_REQUEST, Json(KeyVal{key: "".to_string(),value:"".to_string()})) //TODO: find a better status code
+                }
+            }
         }
         Err(_) => {
             (StatusCode::BAD_REQUEST, Json(KeyVal{key: "".to_string(),value:"".to_string()})) //TODO: find a better status code
@@ -58,14 +74,22 @@ pub async fn read_kv(State(state): State<Arc<Mutex<KvDb>>>, Json(payload): Json<
 pub async fn update_kv(State(state): State<Arc<Mutex<KvDb>>>, Json(payload): Json<KeyVal>) -> (StatusCode, Json<MinResponse>) {
     let key = &payload.key.clone();
     let val = &payload.value.clone();
-    let update_res = state.lock().unwrap().update(key, val);
-    match update_res {
-        Ok(res) => {
-            if res {
-                (StatusCode::CREATED, Json(MinResponse{result:true}))
-            }
-            else {
-                (StatusCode::BAD_REQUEST, Json(MinResponse{result:false})) //TODO: find a better status code
+    let lock_res = state.lock();
+    match lock_res {
+        Ok(mut lock) => {
+            let update_res = lock.update(key, val);
+            match update_res {
+                Ok(res) => {
+                    if res {
+                        (StatusCode::CREATED, Json(MinResponse{result:true}))
+                    }
+                    else {
+                        (StatusCode::BAD_REQUEST, Json(MinResponse{result:false})) //TODO: find a better status code
+                    }
+                }
+                Err(_) => {
+                    (StatusCode::BAD_REQUEST, Json(MinResponse{result:false})) //TODO: find a better status code
+                }
             }
         }
         Err(_) => {
@@ -76,14 +100,22 @@ pub async fn update_kv(State(state): State<Arc<Mutex<KvDb>>>, Json(payload): Jso
 //delete
 pub async fn delete_kv(State(state): State<Arc<Mutex<KvDb>>>, Json(payload): Json<SearchKey>) -> (StatusCode, Json<MinResponse>) {
     let key = &payload.key.clone();
-    let delete_res = state.lock().unwrap().delete(key);
-    match delete_res {
-        Ok(res) => {
-            if res {
-                (StatusCode::CREATED, Json(MinResponse{result:true}))
-            }
-            else {
-                (StatusCode::BAD_REQUEST, Json(MinResponse{result:false})) //TODO: find a better status code
+    let lock_res = state.lock();
+    match lock_res{
+        Ok(mut lock ) => {
+            let delete_res = lock.delete(key);
+            match delete_res {
+                Ok(res) => {
+                    if res {
+                        (StatusCode::CREATED, Json(MinResponse{result:true}))
+                    }
+                    else {
+                        (StatusCode::BAD_REQUEST, Json(MinResponse{result:false})) //TODO: find a better status code
+                    }
+                }
+                Err(_) => {
+                    (StatusCode::BAD_REQUEST, Json(MinResponse{result:false})) //TODO: find a better status code
+                }
             }
         }
         Err(_) => {
@@ -97,7 +129,7 @@ pub async fn start_api_server(){
 
     let app = Router::new()
     .route("/kv/create", post(create_kv))
-    .route("/kv/read",   get(read_kv))
+    .route("/kv/read",   get(read_kv)) 
     .route("/kv/update", put(update_kv))
     .route("/kv/delete", delete(delete_kv))
     .with_state(state);

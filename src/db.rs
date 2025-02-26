@@ -177,3 +177,112 @@ impl KvDb {
         }
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    pub fn basic_tests () {
+        /* 
+            basic tests 
+            TODO: remove the test.db at the end of test;
+        */
+        let mut db : KvDb;
+        let db_res =  KvDb::init("test.db".to_string() );
+        match db_res {
+            Ok(res) => {
+                db = res;
+                assert!(true);
+            }
+            Err(_) => {
+                assert!(false, "The db was not able to be created");
+                return;
+            }
+        }
+        let _ = db.create("0", "asdf");
+        let _ = db.create("1", "qwerty");
+        let _ = db.create("2", "hello");
+
+        //read all three
+        for (key,val) in [("0", "asdf"),("1","qwerty"),("2","hello")] {
+            let first_read_res = db.read(key);
+            match first_read_res {
+                Ok((read_key, read_val)) => {
+                    let read_res = (read_key == key.to_string()) && (read_val == val.to_string());
+                    if read_res {
+                        assert!(true);
+                    }
+                    else {
+                        assert!(false, "the read test after an update does not have the correct values. \nExpected key={}, val={} \nReturned key={} val={} ", key,val,read_key, read_val);
+                    }
+                }
+                Err(_) => {
+                    assert!(false, "the first read test failed with an error");
+                }
+            }
+        }
+        //update 1
+        let update_res = db.update("0", "asdfasdf");
+        match update_res {
+            Ok(res) => {
+                if res {
+                    assert!(true);
+                }
+                else {
+                    assert!(false, "the update did not successfully execute");
+                }
+            }
+            Err(_) => {
+                assert!(false,"the update returned an error");
+            }
+        }
+
+        //read 1
+        let read_test_res = db.read("0");
+        match read_test_res {
+            Ok((read_key, read_val)) => {
+                let read_res = (read_key == "0".to_string()) && (read_val == "asdfasdf".to_string());
+                if read_res {
+                    assert!(true);
+                }
+                else {
+                    assert!(false, "the read test after an update does not have the correct values. \nExpected key=0, val=asdfasdf \nReturned key={} val={} ", read_key, read_val);
+                }
+            }
+            Err(_) => {
+                assert!(false, "the second read test failed with an error");
+            }
+        }
+        
+        
+        //delete 1
+        let delete_test_res = db.delete("0");
+        match delete_test_res {
+            Ok(res) =>{
+                if res {
+                    assert!(true);
+                }
+                else {
+                    assert!(false, "the delete test was unable to remove the row from the database");
+                }
+            }
+            Err(_) =>{
+                assert!(false, "");
+            }
+        }
+        // read deleted one   
+        let read_res = db.read("0");
+        match read_res {
+            Ok((_, _)) => {
+                assert!(false, "The row shouldn't exist in the database anymore");
+            }
+            Err(_) => {
+                assert!(true);
+            }
+        }
+    }
+
+}
